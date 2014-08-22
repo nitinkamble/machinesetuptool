@@ -1,0 +1,68 @@
+Machine Setup Tool
+==================
+
+Machine Setup Tool provides ability to configure a BSP image for a particular
+platform or machine. At the boot time, it customizes a BSP OS image
+with the provided machine configuration. It also has ability to select the
+target platform at boot time.
+
+The development of this utility has been inspired by the zaurusd project.
+
+
+Supported features
+==================
+
+* Ability to provide the machine configuration files separately.
+* Ability to provide a custom list of supported machine.
+* Ability to select the target machine via prompt at boot time.
+* Ability to specify and select a default machine configuration on timeout
+  on the boot time prompt.
+* Ability to reconfigure a previously configured image.
+* The following configuration items can be specified for machines.
+  * Formfactor configuration file
+  * ALSA configuration file
+  * ALSA state file
+  * Xorg configuration file
+  * Network interfaces configuration file
+  * A list of kernel modules for automatic boottime loading
+  * A list of kernel modules to blacklist from loading
+  * Extra kernel boot parameters
+  * Serial port configuration for syslinux bootloader
+  * Serial port configuration for grub bootloader
+  * List of additional setup scripts to run at setup time
+  * List of boot scripts to run at every boot
+  * Configuration and ability to reboot the image after the setup process
+
+
+Usage
+=====
+
+No machine configuration is provided in the sources of the Machine Setup Tool.
+Users are expected to create and maintain their machine configurations
+separately. For reference a set of sample machine configurations are provided
+in the config/sample/ directory of the sources. As seen in the sample, the
+main machine configuration file is specified by name "mymachine.vars", which
+specifies rest of the needed machine configuration files for that machine.
+
+In addition to the machine configuration files provided in the
+/etc/machinesetuptool/config directory the default settings for the tool must
+be provided in the /etc/machinesetuptool/defaults file.
+
+
+Future Development
+==================
+
+The framework of the tool is generic, and it can be easily expanded to support
+additional features.
+
+Some of the possible further developments are:
+* Ability to detect target machines.
+* Support for more machine specific configuration settings
+
+
+Contributing to the project
+===========================
+
+If you want to contribute to the project or want to discuss about any features
+or communicate about anything on the project, contact the developers listed
+in the AUTHORS file.

@@ -1,0 +1,61 @@
+#!/bin/sh
+
+# Some variables such as SUPPORTED_MACHINES comes from the setup script
+
+if [ -z "${DEFAULT_MACHINE_SELECTION}" ]
+then
+	DEFAULT_MACHINE_SELECTION="none"
+fi
+
+MACHINE=invalid
+NEED_REPLY=1
+TIMEOUT=60
+while [ "$NEED_REPLY" == "1" ]; do
+	echo
+	echo " ----------------------------------------------------------------- "
+	echo "| * * * * * * * * *   Machine Setup Tool Menu   * * * * * * * * * |"
+	echo " ----------------------------------------------------------------- "
+	echo This image can be configured for one of the machines listed below.
+	echo Select your machine on the prompt below. The prompt will timeout
+	echo after ${TIMEOUT} seconds.
+	echo Default machine selection after timeout : ${DEFAULT_MACHINE_SELECTION}
+	echo 
+	echo List of supported machines:
+	for m in ${SUPPORTED_MACHINES}; do
+		if [ -r @appconfdir@/config/${m}/${m}.vars ]; then
+			echo -n "  ${m} : "
+			description=`grep "BRIEF_DESCRIPTION=" @appconfdir@/config/${m}/${m}.vars | sed "s/^BRIEF_DESCRIPTION=\"//" | sed "s/\" *$//"`
+			echo ${description}
+		fi
+	done
+	echo "  none : Do not make any configuration changes"
+	echo
+	read -t ${TIMEOUT} -p "Select your machine: " REPLY
+	
+	if [ "$?" != "0" ]; then
+		REPLY="${DEFAULT_MACHINE_SELECTION}"
+	fi
+
+	if [ "${REPLY}" == "none" ]; then
+		# Not configuring the image for any machine.
+		MACHINE=""
+		NEED_REPLY=0
+		break
+	fi
+
+	for m in ${SUPPORTED_MACHINES}; do
+		if [ "${m}" == "${REPLY}" ]
+		then
+			MACHINE=${REPLY}
+			NEED_REPLY=0
+			break
+		fi
+	done
+
+	if [ "${MACHINE}" == "invalid" ]; then
+		echo "Error: The machine selected is invalid. Retry."
+		echo
+	fi
+done
+
+# At this point the MACHINE variable is set properly

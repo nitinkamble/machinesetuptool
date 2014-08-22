@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# The machine detection logic will be provided by the BSP layer.
+# On a successful machine detection, the variable MACHINE will be set
+

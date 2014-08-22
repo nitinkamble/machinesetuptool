@@ -1,0 +1,184 @@
+#!/bin/sh
+
+set MACHINE=""
+
+if [ -r @appconfdir@/defaults ]; then
+	# this provides MACHINE, SUPPORTED_MACHINES and DEFAULT_MACHINE_SELECTION variables
+	source @appconfdir@/defaults
+fi
+
+OLDMACHINE="${MACHINE}"
+
+read KERNEL_COMMAND_LINE < /proc/cmdline
+for i in $KERNEL_COMMAND_LINE; do
+        case $i in
+        target-machine=*)
+		MACHINE="`echo $i | sed "s/^target-machine=//"`"
+                ;;
+        esac
+done
+
+if [ "${MACHINE}" == "none" ]; then
+	# do not change anything on the target image
+	exit 0
+fi
+
+# Check weather the specified machine is a supported one
+VALID_MACHINE=0
+for m in ${SUPPORTED_MACHINES} ; do
+	if [ "${m}" == "${MACHINE}" ]; then
+		VALID_MACHINE=1
+	fi
+done
+
+if [ -z "${MACHINE}" -o "${VALID_MACHINE}" != "1" -o ! -r "@appconfdir@/config/${MACHINE}/${MACHINE}.vars" ]; then
+	source @appconfdir@/scripts/detect-machine
+fi
+
+if [ -z "${MACHINE}" -o ! -r "@appconfdir@/config/${MACHINE}/${MACHINE}.vars" ]; then
+	source @appconfdir@/scripts/machine-selection-menu
+fi
+
+if [ -z "${MACHINE}" ]; then
+	echo "Target machine is not set. Previous machine configuration is preserved."
+	exit
+fi
+
+if [ -r "@appconfdir@/config/${MACHINE}/${MACHINE}.vars" ]; then
+	source @appconfdir@/config/${MACHINE}/${MACHINE}.vars
+fi
+
+if [ "$OLDMACHINE" != "$MACHINE" ]; then
+	rm -f @sysconfdir@/formfactor/machconfig
+	if [ -f "@appconfdir@/config/${MACHINE}/${FORMFACTOR_FILE}" ]; then
+		 cp -f @appconfdir@/config/${MACHINE}/${FORMFACTOR_FILE} @sysconfdir@/formfactor/machconfig
+	fi
+
+	rm -f @sysconfdir@/asound.conf
+	if [ -f "@appconfdir@/config/${MACHINE}/${ALSA_CONFIG_FILE}" ]; then
+		 cp -f @appconfdir@/config/${MACHINE}/${ALSA_CONFIG_FILE} @sysconfdir@/asound.conf
+	fi
+
+	rm -f /var/lib/alsa/asound.state
+	if [ -f "@appconfdir@/config/${MACHINE}/${ALSA_STATE_FILE}" ]; then
+		cp -f @appconfdir@/config/${MACHINE}/${ALSA_STATE_FILE} /var/lib/alsa/asound.state
+	fi
+
+	rm -f @sysconfdir@/X11/xorg.conf
+	if [ -f "@appconfdir@/config/${MACHINE}/${XORG_CONFIG_FILE}" ]; then
+		cp -f @appconfdir@/config/${MACHINE}/${XORG_CONFIG_FILE} @sysconfdir@/X11/xorg.conf
+	fi
+
+	rm -f @sysconfdir@/network/interfaces
+	if [ -f "@appconfdir@/config/${MACHINE}/${NETWORK_INTERFACES_FILE}" ]; then
+		cp -f @appconfdir@/config/${MACHINE}/${NETWORK_INTERFACES_FILE} @sysconfdir@/network/interfaces
+	fi
+
+	# Autoload kernel modules
+	rm -f @sysconfdir@/modules-load.d/autoload.conf
+	for mod in ${AUTOLOAD_KERNEL_MODULES}; do
+		echo ${mod} >> @sysconfdir@/modules-load.d/autoload.conf
+	done
+
+	# Prohibit undesired kernel modules
+	rm -f @sysconfdir@/modprobe.d/prohibit.conf
+	for mod in ${PROHIBIT_KERNEL_MODULES}; do
+		echo blacklist ${mod} >> @sysconfdir@/modprobe.d/prohibit.conf
+	done
+
+	# kernel boot parameters
+	EXTRA_KERNEL_PARAMETERS_SED=`echo " :mst-begin ${EXTRA_KERNEL_PARAMETERS} mst-end: " | sed 's#/#\\/#g'`
+	if [ -w /media/realroot/syslinux.cfg ]; then
+		sed "s/ :mst-begin .* mst-end: / /" -i /media/realroot/syslinux.cfg
+		if [ -n "${EXTRA_KERNEL_PARAMETERS}" ]; then
+			sed "/^APPEND/{s/$/${EXTRA_KERNEL_PARAMETERS_SED}/}" -i /media/realroot/syslinux.cfg
+		fi
+	fi
+	if [ -w /media/realroot/EFI/BOOT/grub.cfg ]; then
+		sed "s/ mst-begin .* mst-end / /" -i /media/realroot/EFI/BOOT/grub.cfg
+		if [ -n "${EXTRA_KERNEL_PARAMETERS}" ]; then
+			sed "/^linux /{s/$/${EXTRA_KERNEL_PARAMETERS_SED}/}" -i /media/realroot/EFI/BOOT/grub.cfg
+		fi
+	fi
+
+	# syslinux serial port config
+	if [ -w /media/realroot/syslinux.cfg ]; then
+		sed "/^serial.*$/d" -i /media/realroot/syslinux.cfg
+		sed "/^SERIAL.*$/d" -i /media/realroot/syslinux.cfg
+		if [ -n "${SYSLINUX_SERIAL_CONFIG}" ]; then
+			SYSLINUX_SERIAL_CONFIG_SED=`echo "${SYSLINUX_SERIAL_CONFIG}" | sed 's#/#\\/#g'`
+			sed "1i${SYSLINUX_SERIAL_CONFIG_SED}" -i /media/realroot/syslinux.cfg
+		fi
+	fi
+	
+	# grub serial port config
+	if [ -w /media/realroot/EFI/BOOT/grub.cfg ]; then
+		sed "/^serial.*$/d" -i /media/realroot/EFI/BOOT/grub.cfg
+		sed "/^SERIAL.*$/d" -i /media/realroot/EFI/BOOT/grub.cfg
+		if [ -n "${GRUB_SERIAL_CONFIG}" ]; then
+			GRUB_SERIAL_CONFIG_SED=`echo "${GRUB_SERIAL_CONFIG}" | sed 's#/#\\/#g'`
+			sed "1i${GRUB_SERIAL_CONFIG_SED}" -i /media/realroot/EFI/BOOT/grub.cfg
+		fi
+	fi
+
+	# serial console config in /etc/inittab
+	SEDPATERN=`echo "^[^0-9].*:12345:respawn:@base_sbindir@/getty .*" | sed 's#/#\\\\/#g'`
+	sed "/${SEDPATERN}/d" -i @sysconfdir@/inittab
+	for console in ${GETTY_SERIAL_CONSOLES}; do
+		gettty_params=`echo ${console} | sed s/\;/\ /g`
+		label=`echo ${console} | sed -e 's/^.*;tty//' -e 's/;.*//'`
+		echo "$label:12345:respawn:@base_sbindir@/getty ${gettty_params}" >> @sysconfdir@/inittab
+	done
+
+	# enable root login on serial console in /etc/securetty
+	sed "/^# Machine Setup Tool Section Begin$/,/^# Machine Setup Tool Section End$/d" -i @sysconfdir@/securetty
+	if [ -n "${SERIAL_CONSOLES}" ]; then
+		echo "# Machine Setup Tool Section Begin" >> @sysconfdir@/securetty
+		for console in ${SERIAL_CONSOLES}; do
+			ttydev=`echo "$console" | sed -e 's/^.*\;//' -e 's/\;.*//'`
+			echo $ttydev >> @sysconfdir@/securetty
+		done
+		echo "# Machine Setup Tool Section End" >> @sysconfdir@/securetty
+	fi
+
+	# Machine specific setup scripts
+	for script in ${SETUP_SCRIPTS}; do
+		if [ -f "@appconfdir@/config/${MACHINE}/${script}" ]; then
+			source @appconfdir@/config/${MACHINE}/${script}
+		else
+			echo "Error: The machine specific setup script file is missing: @appconfdir@/config/${MACHINE}/${script}"
+		fi
+	done
+
+	# Save the machine selection permanently
+	sed "/^MACHINE=/d" -i @appconfdir@/defaults
+	echo MACHINE=${MACHINE} >> @appconfdir@/defaults
+
+	if [ "$OLDMACHINE" != "$MACHINE" -a "${REBOOT_AFTER_SETUP}" == "yes" ]; then
+		echo
+		echo The machine need to reboot for the configuration changes to take effect.
+		echo
+		read -t 60 -p "Do you want to stop the automatic reboot in 60 seconds [yes/no]: " REPLY
+	
+		# read failed
+		if [ "$?" != "0" ]; then
+			REPLY="yes"
+		fi
+
+		if [ "${REPLY}" == "yes" ]; then
+			echo Not rebooting now. To activate all the setup changes a reboot is needed.
+		else
+			echo Rebooting now to activate the new machine configuration.
+			reboot
+		fi
+	fi
+fi
+
+# Machine specific scripts, executed on every boot
+for script in ${BOOT_SCRIPTS}; do
+	if [ -f "@appconfdir@/config/${script}" ]; then
+		source @appconfdir@/config/${script}
+	else
+		echo "Error: The machine specific boot script file is missing: @appconfdir@/config/${script}"
+	fi
+done

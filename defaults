@@ -1,0 +1,5 @@
+# Note: These variables need to be filled as per the added machine
+# configuration supplied in the /etc/machinesetuptool/config/ direcotry.
+
+SUPPORTED_MACHINES=""
+DEFAULT_MACHINE_SELECTION=""

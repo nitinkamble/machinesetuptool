@@ -1,0 +1,5 @@
+All the machine configuration files go here. The sample directory contains
+few sample files for reference. The machine configuration files belong in
+the individual BSP layer. Look at the BSPs in the meta-intel layer for
+reference.
+

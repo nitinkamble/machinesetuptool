@@ -1,0 +1,34 @@
+#!/bin/sh
+
+killproc() {            # kill the named process(es)
+        pid=`/bin/ps -e x |
+             /bin/grep $1 |
+             /bin/grep -v grep |
+             /bin/sed -e 's/^  *//' -e 's/ .*//'`
+        [ "$pid" != "" ] && kill $pid
+}
+
+
+case "$1" in
+    start)
+    	echo "Starting Machine Setup Tool"
+	source @appconfdir@/setup
+    ;;
+
+    stop)
+        echo "Stopping Machine Setup Tool"
+    ;;
+
+    restart)
+    	$0 stop
+    	sleep 1
+    	$0 start
+    ;;
+
+    *)
+        echo "usage: $0 { start | stop }"
+    	exit 1
+    ;;
+esac
+
+exit 0
