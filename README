@@ -53,10 +53,11 @@ Future Development
 ==================
 
 The framework of the tool is generic, and it can be easily expanded to support
-additional features.
+additional features. These features are under consideration, and will be
+added later.
 
-Some of the possible further developments are:
-* Ability to detect target machines.
+Some of the further developments are:
+* Pulseaudio based sound configuration
 * Support for more machine specific configuration settings
 
 
