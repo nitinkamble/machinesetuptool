@@ -2,4 +2,11 @@
 # configuration supplied in the /etc/machinesetuptool/config/ direcotry.
 
 SUPPORTED_MACHINES=""
-DEFAULT_MACHINE_SELECTION=""
+
+# Allowed Options:
+#  "detect" : Try to detect the target platform
+#  "ask" : Prompt user for the target platform at boottime
+#  "detect-ask" : try detecting first, if does not work them prompt the user
+#  "" : do not change anything on target
+#  or any of the machine listed in the SUPPORTED_MACHINES variable
+MACHINE=""

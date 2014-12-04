@@ -2,12 +2,7 @@
 
 # Some variables such as SUPPORTED_MACHINES comes from the setup script
 
-if [ -z "${DEFAULT_MACHINE_SELECTION}" ]
-then
-	DEFAULT_MACHINE_SELECTION="none"
-fi
-
-MACHINE=invalid
+MACHINE="invalid"
 NEED_REPLY=1
 TIMEOUT=60
 while [ "$NEED_REPLY" == "1" ]; do
@@ -28,7 +23,7 @@ while [ "$NEED_REPLY" == "1" ]; do
 			echo ${description}
 		fi
 	done
-	echo "  none : Do not make any configuration changes"
+	echo "  donothing : Do not make any configuration changes"
 	echo
 	read -t ${TIMEOUT} -p "Select your machine: " REPLY
 	
@@ -36,11 +31,10 @@ while [ "$NEED_REPLY" == "1" ]; do
 		REPLY="${DEFAULT_MACHINE_SELECTION}"
 	fi
 
-	if [ "${REPLY}" == "none" ]; then
+	if [ "${REPLY}" == "donothing" ]; then
 		# Not configuring the image for any machine.
 		MACHINE=""
 		NEED_REPLY=0
-		break
 	fi
 
 	for m in ${SUPPORTED_MACHINES}; do

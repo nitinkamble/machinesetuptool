@@ -18,24 +18,32 @@ for i in $KERNEL_COMMAND_LINE; do
         esac
 done
 
-if [ "${MACHINE}" == "none" ]; then
+if [ "${MACHINE}" == "" ]; then
 	# do not change anything on the target image
 	exit 0
 fi
 
 # Check weather the specified machine is a supported one
 VALID_MACHINE=0
-for m in ${SUPPORTED_MACHINES} ; do
-	if [ "${m}" == "${MACHINE}" ]; then
+if [ "${MACHINE}" != "ask" ]; then
+	for m in ${SUPPORTED_MACHINES}; do
+		if [ "${m}" == "${MACHINE}" -a -r "@appconfdir@/config/${MACHINE}/${MACHINE}.vars" ]; then
+			VALID_MACHINE=1
+		fi
+	done
+fi
+
+if [ "${MACHINE}" == "detect" -o "${MACHINE}" == "detect-ask" -o "${VALID_MACHINE}" != "1" ]; then
+	source @appconfdir@/scripts/detect-machine
+fi
+
+for m in ${SUPPORTED_MACHINES}; do
+	if [ "${m}" == "${MACHINE}" -a -r "@appconfdir@/config/${MACHINE}/${MACHINE}.vars" ]; then
 		VALID_MACHINE=1
 	fi
 done
 
-if [ -z "${MACHINE}" -o "${VALID_MACHINE}" != "1" -o ! -r "@appconfdir@/config/${MACHINE}/${MACHINE}.vars" ]; then
-	source @appconfdir@/scripts/detect-machine
-fi
-
-if [ -z "${MACHINE}" -o ! -r "@appconfdir@/config/${MACHINE}/${MACHINE}.vars" ]; then
+if [ "${MACHINE}" == "ask" -o "${MACHINE}" == "detect-ask" -o "${VALID_MACHINE}" != "1" ]; then
 	source @appconfdir@/scripts/machine-selection-menu
 fi
 
