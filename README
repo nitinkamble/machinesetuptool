@@ -20,6 +20,8 @@ Supported features
 * Ability to reconfigure a previously configured image.
 * The following configuration items can be specified for machines.
   * Formfactor configuration file
+  * default sink for pulseaudio
+  * default source for pulseaudio
   * ALSA configuration file
   * ALSA state file
   * Xorg configuration file

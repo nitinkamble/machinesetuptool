@@ -62,6 +62,17 @@ if [ "$OLDMACHINE" != "$MACHINE" ]; then
 		 cp -f @appconfdir@/config/${MACHINE}/${FORMFACTOR_FILE} @sysconfdir@/formfactor/machconfig
 	fi
 
+	if [ -w @sysconfdir@/pulse/default.pa ]; then
+		sed "/^set-default-sink.*$/d" -i @sysconfdir@/pulse/default.pa
+		if [ -n "${PULSEAUDIO_DEFAULT_SINK}" ]; then
+			echo "set-default-sink ${PULSEAUDIO_DEFAULT_SINK}" >> @sysconfdir@/pulse/default.pa
+		fi
+		sed "/^set-default-source.*$/d" -i @sysconfdir@/pulse/default.pa
+		if [ -n "${PULSEAUDIO_DEFAULT_SOURCE}" ]; then
+			echo "set-default-source ${PULSEAUDIO_DEFAULT_SOURCE}" >> @sysconfdir@/pulse/default.pa
+		fi
+	fi
+
 	rm -f @sysconfdir@/asound.conf
 	if [ -f "@appconfdir@/config/${MACHINE}/${ALSA_CONFIG_FILE}" ]; then
 		 cp -f @appconfdir@/config/${MACHINE}/${ALSA_CONFIG_FILE} @sysconfdir@/asound.conf
