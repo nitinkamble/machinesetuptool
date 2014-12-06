@@ -62,6 +62,16 @@ if [ "$OLDMACHINE" != "$MACHINE" ]; then
 		 cp -f @appconfdir@/config/${MACHINE}/${FORMFACTOR_FILE} @sysconfdir@/formfactor/machconfig
 	fi
 
+	rm -f @sysconfdir@/asound.conf
+	if [ -f "@appconfdir@/config/${MACHINE}/${ALSA_CONFIG_FILE}" ]; then
+		 cp -f @appconfdir@/config/${MACHINE}/${ALSA_CONFIG_FILE} @sysconfdir@/asound.conf
+	fi
+
+	rm -f /var/lib/alsa/asound.state
+	if [ -f "@appconfdir@/config/${MACHINE}/${ALSA_STATE_FILE}" ]; then
+		cp -f @appconfdir@/config/${MACHINE}/${ALSA_STATE_FILE} /var/lib/alsa/asound.state
+	fi
+
 	rm -f @sysconfdir@/X11/xorg.conf
 	if [ -f "@appconfdir@/config/${MACHINE}/${XORG_CONFIG_FILE}" ]; then
 		cp -f @appconfdir@/config/${MACHINE}/${XORG_CONFIG_FILE} @sysconfdir@/X11/xorg.conf
